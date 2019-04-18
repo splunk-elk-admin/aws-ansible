@@ -1,0 +1,97 @@
+---
+- name: Create ec2 key
+  hosts: local
+  connection: local
+  gather_facts: no
+  vars:
+    instance_type: t2.micro 
+    security_group: web_sg 
+    image: ami-074e2d6769f445be5
+    keypair: demo-key
+    region: us-west-1
+    count: 1
+  tasks:
+  - name: Create a new EC2 key
+    ec2_key:
+      name: demo-key
+      region: us-west-1
+    register: ec2_key
+  - name: Save private key
+    copy: content="{{ ec2_key.key.private_key }}" dest="./aws-demo.pem" mode=0600
+    when: ec2_key.changed
+  - name: Create security group 
+    ec2_group:
+      name: "{{ security_group }}"
+      description: "Webserver Security Group"
+      region: "{{ region }}"
+      rules:
+        - proto: tcp 
+          from_port: 22 
+          to_port: 22 
+          cidr_ip: 0.0.0.0/0
+        - proto: tcp 
+          from_port: 80
+          to_port: 80
+          cidr_ip: 0.0.0.0/0
+        - proto: tcp 
+          from_port: 443
+          to_port: 443
+          cidr_ip: 0.0.0.0/0
+      rules_egress:
+        - proto: all 
+          cidr_ip: 0.0.0.0/0
+  - name: Launch new ec2 instance 
+    ec2:
+      group: "{{ security_group }}"
+      instance_type: "{{ instance_type }}"
+      image: "{{ image }}"
+      wait: true 
+      region: "{{ region }}"
+      keypair: "{{ keypair }}"
+      count: "{{ count }}"
+    register: ec2 
+  - name: Add new instance to host group
+    add_host:
+      name: "{{ item.public_ip }}"
+      groups: webservers
+    loop: "{{ ec2.instances }}"
+  - name: Tag the instance 
+    ec2_tag:
+      resource: "{{ item.id }}"
+      region: "{{ region }}"
+      state: "present"
+    loop: "{{ ec2.instances }}"
+    args:
+      tags:
+        Type: webserver
+  - name: Wait for ssh to come up 
+    wait_for: 
+      host: "{{ item.public_ip }}"
+      port: 22 
+      state: started 
+    loop: "{{ ec2.instances }}"
+#--------------------------------------------------------------------
+- name: Deploying apache webserver 
+  hosts: webservers
+  remote_user: centos
+  become: yes 
+  gather_facts: no
+  vars:
+    ansible_ssh_private_key_file: aws-demo.pem
+  tasks:
+  - name: Install http
+    yum: 
+      name: httpd
+      state: latest 
+  - name: Update http content
+    copy:
+      src: files/index.html
+      dest: /var/www/html/
+  - name: Start and enable http service 
+    service:
+      name: httpd 
+      state: started 
+      enabled: true 
+
+
+          
