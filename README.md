@@ -11,37 +11,45 @@ $ mkdir ~/.aws
 ```
 
 Create a config file to specify the default AWS region to use 
+```
 $ cat ~/.aws/config 
 [default]
 region = us-west-1
 $
-
+```
 Create a credentials file to store AWS crednetials 
+```
 $ cat ~/.aws/credentials 
 [default]
 AWS_ACCESS_KEY_ID=<Your access key goes here>
 AWS_SECRET_ACCESS_KEY=<Your secret access key goes here>
 $ 
+```  
   
 ### Ansible Specific 
 Create ansible.cfg in the directory where your playbook will reside 
+```
 $ cat ansible.cfg 
 [defaults]
 inventory = ./hosts 
 host_key_checking = False
 $ 
+```
 
 Create a hosts file to be used as inventory 
+```
 $ cat hosts 
 [local]
 localhost
 $
+```
 
 Create a files folder to store the index.html 
+```
 $ cat files/index.html 
 Ping Pong
 $ 
-
+```
 ## Playbook 
 deploy-http.yml does the following 
 - Creates a new EC2 key
@@ -56,4 +64,6 @@ deploy-http.yml does the following
 - Starts and enables http service 
 
 ## Deployment 
+```
 $ ansible-playbook deploy-http.yml  
+```
