@@ -6,7 +6,7 @@ AWS credentials for programmatic access with appropriate privileges
 ## Pre Work 
 ### AWS Specific 
 Create .aws folder in your home directory 
-$ mkdir ~/.aws 
+mkdir ~/.aws 
 
 Create a config file to specify the default AWS region to use 
 $ cat ~/.aws/config 
